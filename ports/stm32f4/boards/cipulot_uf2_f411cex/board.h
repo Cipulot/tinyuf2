@@ -51,8 +51,8 @@
 //--------------------------------------------------------------------+
 
 // Flash size of the board
-#define BOARD_FLASH_SIZE      (256 * 1024)
-#define BOARD_FLASH_SECTORS   6
+#define BOARD_FLASH_SIZE      (512 * 1024)
+#define BOARD_FLASH_SECTORS   8
 
 //--------------------------------------------------------------------+
 // USB UF2
@@ -61,7 +61,7 @@
 #define USB_VID           0x6369
 #define USB_PID           0x6369
 #define USB_MANUFACTURER  "Cipulot"
-#define USB_PRODUCT       "UF2 F411CCx (256KB)"
+#define USB_PRODUCT       "UF2 F411CEx (512KB)"
 
 #define UF2_PRODUCT_NAME  USB_MANUFACTURER " " USB_PRODUCT
 #define UF2_BOARD_ID      "Cipulot_UF2"
