@@ -26,6 +26,11 @@ jobs:
         - 'cipulot_uf2_f401cex'
         - 'cipulot_uf2_f411ccx'
         - 'cipulot_uf2_f411cex'
+        - 'cipulot_uf2_f401cbx_blackpill'
+        - 'cipulot_uf2_f401ccx_blackpill'
+        - 'cipulot_uf2_f401cex_blackpill'
+        - 'cipulot_uf2_f411ccx_blackpill'
+        - 'cipulot_uf2_f411cex_blackpill'
     steps:
     - name: Setup Python
       uses: actions/setup-python@v3
