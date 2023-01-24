@@ -61,7 +61,7 @@
 #define USB_VID           0x6369
 #define USB_PID           0x6369
 #define USB_MANUFACTURER  "Cipulot"
-#define USB_PRODUCT       "UF2 F411CEx (512KB)"
+#define USB_PRODUCT       "UF2 F411CEx 8MHz (512KB)"
 
 #define UF2_PRODUCT_NAME  USB_MANUFACTURER " " USB_PRODUCT
 #define UF2_BOARD_ID      "Cipulot_UF2"

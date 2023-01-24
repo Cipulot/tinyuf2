@@ -21,11 +21,16 @@ jobs:
         board:
         # Alphabetical order
         # stm32f4
-        - 'cipulot_uf2_f401cbx'
-        - 'cipulot_uf2_f401ccx'
-        - 'cipulot_uf2_f401cex'
-        - 'cipulot_uf2_f411ccx'
-        - 'cipulot_uf2_f411cex'
+        - 'cipulot_uf2_f401cbx_8mhz'
+        - 'cipulot_uf2_f401ccx_8mhz'
+        - 'cipulot_uf2_f401cex_8mhz'
+        - 'cipulot_uf2_f411ccx_8mhz'
+        - 'cipulot_uf2_f411cex_8mhz'
+        - 'cipulot_uf2_f401cbx_16mhz'
+        - 'cipulot_uf2_f401ccx_16mhz'
+        - 'cipulot_uf2_f401cex_16mhz'
+        - 'cipulot_uf2_f411ccx_16mhz'
+        - 'cipulot_uf2_f411cex_16mhz'
         - 'cipulot_uf2_f401cbx_blackpill'
         - 'cipulot_uf2_f401ccx_blackpill'
         - 'cipulot_uf2_f401cex_blackpill'

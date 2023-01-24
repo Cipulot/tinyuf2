@@ -51,8 +51,8 @@
 //--------------------------------------------------------------------+
 
 // Flash size of the board
-#define BOARD_FLASH_SIZE      (128 * 1024)
-#define BOARD_FLASH_SECTORS   5
+#define BOARD_FLASH_SIZE      (512 * 1024)
+#define BOARD_FLASH_SECTORS   8
 
 //--------------------------------------------------------------------+
 // USB UF2
@@ -61,7 +61,7 @@
 #define USB_VID           0x6369
 #define USB_PID           0x6369
 #define USB_MANUFACTURER  "Cipulot"
-#define USB_PRODUCT       "UF2 F401CBx (128KB)"
+#define USB_PRODUCT       "UF2 F401CEx 16MHz (512KB)"
 
 #define UF2_PRODUCT_NAME  USB_MANUFACTURER " " USB_PRODUCT
 #define UF2_BOARD_ID      "Cipulot_UF2"
@@ -91,7 +91,7 @@ static inline void clock_init(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = HSE_VALUE/2000000; // 8 MHz / 2 MHz = 4
+  RCC_OscInitStruct.PLL.PLLM = HSE_VALUE/2000000; // 16 MHz / 2 MHz = 8
   RCC_OscInitStruct.PLL.PLLN = 168;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
   RCC_OscInitStruct.PLL.PLLQ = 7;
