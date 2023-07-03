@@ -24,7 +24,10 @@
 
 #include "board_api.h"
 #include "stm32f3xx_hal.h"
+
+#ifndef BUILD_NO_TINYUSB
 #include "tusb.h"
+#endif
 
 //--------------------------------------------------------------------+
 // MACRO TYPEDEF CONSTANT ENUM DECLARATION
@@ -34,8 +37,18 @@
 
 static UART_HandleTypeDef UartHandle;
 
+static bool reset_by_option_bytes = false;
+
+bool board_reset_by_option_bytes(void)
+{
+  return reset_by_option_bytes;
+}
+
 void board_init(void)
 {
+  // Check asap to ensure correct reason
+  reset_by_option_bytes = !!(__HAL_RCC_GET_FLAG(RCC_FLAG_OBLRST));
+
   clock_init();
   SystemCoreClockUpdate();
 
@@ -129,14 +142,16 @@ bool board_app_valid(void)
   if((((*(uint32_t*)BOARD_FLASH_APP_START) - BOARD_RAM_START) <= BOARD_RAM_SIZE)) // && ((*(uint32_t*)BOARD_FLASH_APP_START + 4) > BOARD_FLASH_APP_START) && ((*(uint32_t*)BOARD_FLASH_APP_START + 4) < BOARD_FLASH_APP_START + BOARD_FLASH_SIZE)
   {
     return true;
-  } else
-  {
-    return false;
   }
+  return false;
 }
 
 void board_app_jump(void)
 {
+  volatile uint32_t const * app_vector = (volatile uint32_t const*) BOARD_FLASH_APP_START;
+  uint32_t sp = app_vector[0];
+  uint32_t app_entry = app_vector[1];
+
   GPIO_InitTypeDef  GPIO_InitStruct;
   GPIO_InitStruct.Pin = GPIO_PIN_12;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -160,6 +175,7 @@ void board_app_jump(void)
   #if defined(UART_DEV) && CFG_TUSB_DEBUG
   HAL_UART_DeInit(&UartHandle);
   HAL_GPIO_DeInit(UART_GPIO_PORT, UART_TX_PIN | UART_RX_PIN);
+  UART_CLOCK_DISABLE();
   #endif
 
   HAL_GPIO_DeInit(GPIOA, GPIO_PIN_12 | GPIO_PIN_11);
@@ -183,18 +199,14 @@ void board_app_jump(void)
   NVIC->ICER[2] = 0xFFFFFFFF;
   NVIC->ICER[3] = 0xFFFFFFFF;
 
-  // TODO protect bootloader region
-
-  volatile uint32_t const * app_vector = (volatile uint32_t const*) BOARD_FLASH_APP_START;
-
   /* switch exception handlers to the application */
   SCB->VTOR = (uint32_t) BOARD_FLASH_APP_START;
 
   // Set stack pointer
-  __set_MSP(app_vector[0]);
+  __set_MSP(sp);
 
   // Jump to Application Entry
-  asm("bx %0" ::"r"(app_vector[1]));
+  asm("bx %0" ::"r"(app_entry));
 }
 
 uint8_t board_usb_get_serial(uint8_t serial_id[16])
@@ -314,8 +326,7 @@ int board_uart_write(void const * buf, int len)
 #endif
 }
 
-#ifndef TINYUF2_SELF_UPDATE
-
+#ifndef BUILD_NO_TINYUSB
 // Forward USB interrupt events to TinyUSB IRQ Handler
 void USB_HP_IRQHandler(void)
 {
@@ -341,7 +352,7 @@ void USBWakeUp_RMP_IRQHandler(void)
 
 // Required by __libc_init_array in startup code if we are compiling using
 // -nostdlib/-nostartfiles.
-void _init(void)
+__attribute__((used)) void _init(void)
 {
 
 }

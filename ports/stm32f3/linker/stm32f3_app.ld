@@ -42,8 +42,8 @@ _Min_Stack_Size = 0x800;; /* required amount of stack */
 /* Specify the memory areas */
 MEMORY
 {
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 256K
-RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 40K - 4
+FLASH (rx)      : ORIGIN = 0x8004000, LENGTH = 256K - 16K /* must match BOARD_FLASH_APP_START */
+RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 40K - 4    /* reserve 4 bytes for double tap   */
 CCMRAM (rw)      : ORIGIN = 0x10000000, LENGTH = 8K
 }
 

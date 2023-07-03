@@ -41,15 +41,20 @@ $(OBJ_DIRS):
 
 $(BUILD)/$(OUTNAME).elf: $(OBJ)
 	@echo LINK $@
-	@$(CC) -o $@ $(LDFLAGS) $(addprefix $(LD_SCRIPT_FLAG), $(LD_FILES)) $^ -Wl,--start-group $(LIBS) -Wl,--end-group
+	@$(CC) -o $@ $(LDFLAGS) $(addprefix $(LD_SCRIPT_FLAG), $(LD_FILES)) $^ -Wl,--print-memory-usage -Wl,--start-group $(LIBS) -Wl,--end-group
 
 $(BUILD)/$(OUTNAME).bin: $(BUILD)/$(OUTNAME).elf
 	@echo CREATE $@
 	@$(OBJCOPY) -O binary $^ $@
 
+# skip hex rul if building bootloader for imxrt since it needs spceial rule
+ifneq ($(PORT)$(BUILD_APPLICATION),mimxrt10xx)
+
 $(BUILD)/$(OUTNAME).hex: $(BUILD)/$(OUTNAME).elf
 	@echo CREATE $@
 	@$(OBJCOPY) -O ihex $^ $@
+
+endif
 
 size: $(BUILD)/$(OUTNAME).elf
 	-@echo ''
@@ -64,6 +69,14 @@ linkermap: $(BUILD)/$(OUTNAME).elf
 clean:
 	$(RM) -rf $(BUILD)
 	$(RM) -rf $(BIN)
+
+# get depenecies
+.PHONY: get-deps
+get-deps:
+  ifdef GIT_SUBMODULES
+	git -C $(TOP) submodule update --init $(addprefix lib/,$(GIT_SUBMODULES))
+  endif
+
 
 #-------------- Artifacts --------------
 SELF_UF2 ?= apps/self_update/$(BUILD)/update-$(OUTNAME).uf2
@@ -162,6 +175,13 @@ flash-stlink: $(BUILD)/$(OUTNAME).elf
 erase-stlink:
 	STM32_Programmer_CLI --connect port=swd --erase all
 
+# st-flash must be in PATH
+flash-stflash: $(BUILD)/$(OUTNAME).bin
+	st-flash --reset --format binary write $< 0x8000000
+
+erase-stflash:
+	st-flash erase
+
 #-------------------- Flash with pyocd --------------------
 
 # Flash hex file using pyocd
@@ -176,3 +196,12 @@ flash-pyocd-bin: $(BUILD)/$(OUTNAME).bin
 
 erase-pyocd:
 	pyocd erase -t $(PYOCD_TARGET) -c
+
+#-------------------- Flash with dfu-util -----------------
+
+# flash using ROM bootloader
+flash-dfu-util: $(BUILD)/$(OUTNAME).bin
+	dfu-util -R -a 0 --dfuse-address 0x08000000 -D $<
+
+erase-dfu-util:
+	dfu-util -R -a 0 --dfuse-address 0x08000000:mass-erase:force

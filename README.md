@@ -34,7 +34,7 @@ Not all features are implemented for all MCUs, following is supported MCUs and i
 | K32L2       |  ✔   |      ✔       |             |                  |          |      |
 | LPC55       |  ✔   |      ✔       |             |                  |    ✔     |      |
 | iMXRT       |  ✔   |      ✔       |      ✔      |                  |    ✔     |      |
-| STM32F3     |  ✔   |      ✔       |             |                  |    ✔     |      |
+| STM32F3     |  ✔   |      ✔       |      ✔      |        ✔         |    ✔     |      |
 | STM32F4     |  ✔   |      ✔       |      ✔      |        ✔         |    ✔     |      |
 
 ## Build and Flash
@@ -49,13 +49,17 @@ To build this for a specific board, we need to change current directory to its p
 $ cd ports/stm32f4
 ```
 
-Then compile with `make BOARD=[board_name] all`, for example
+Firstly we need to get all of submodule dependecy for our board e.g mcu driver with `get-deps` target. You only need to do this once for each mcu family
+
+```
+make BOARD=feather_stm32f405_express get-deps
+```
+
+Then compile with `all` target:
 
 ```
 make BOARD=feather_stm32f405_express all
 ```
-
-The required mcu driver submodule if any will be clone automatically if needed. 
 
 ### Flash
 

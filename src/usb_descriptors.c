@@ -41,7 +41,10 @@ enum
 enum
 {
   ITF_NUM_MSC,
+
+#if CFG_TUD_HID
   ITF_NUM_HID,
+#endif
 
 #if CFG_TUD_VENDOR
   ITF_NUM_VENDOR, // webUSB
@@ -53,7 +56,7 @@ enum
 //--------------------------------------------------------------------+
 // Device Descriptors
 //--------------------------------------------------------------------+
-tusb_desc_device_t const desc_device =
+tusb_desc_device_t TINYUF2_CONST desc_device =
 {
     .bLength            = sizeof(tusb_desc_device_t),
     .bDescriptorType    = TUSB_DESC_DEVICE,
@@ -84,7 +87,7 @@ uint8_t const * tud_descriptor_device_cb(void)
 //--------------------------------------------------------------------+
 // HID Report Descriptor
 //--------------------------------------------------------------------+
-
+#if CFG_TUD_HID
 uint8_t const desc_hid_report[] =
 {
   TUD_HID_REPORT_DESC_GENERIC_INOUT(CFG_TUD_HID_BUFSIZE)
@@ -98,13 +101,15 @@ uint8_t const * tud_hid_descriptor_report_cb(uint8_t itf)
   (void) itf;
   return desc_hid_report;
 }
+#endif
 
 
 //--------------------------------------------------------------------+
 // Configuration Descriptor
 //--------------------------------------------------------------------+
 
-#define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + TUD_MSC_DESC_LEN + TUD_HID_INOUT_DESC_LEN + CFG_TUD_VENDOR*TUD_VENDOR_DESC_LEN)
+#define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + TUD_MSC_DESC_LEN + \
+                            CFG_TUD_HID*TUD_HID_INOUT_DESC_LEN + CFG_TUD_VENDOR*TUD_VENDOR_DESC_LEN)
 
 #define EPNUM_MSC_OUT     0x01
 #define EPNUM_MSC_IN      0x81
@@ -123,8 +128,10 @@ uint8_t const desc_configuration[] =
   // Interface number, string index, EP Out & EP In address, EP size
   TUD_MSC_DESCRIPTOR(ITF_NUM_MSC, STRID_MSC, EPNUM_MSC_OUT, EPNUM_MSC_IN, TUD_OPT_HIGH_SPEED ? 512 : 64),
 
+#if CFG_TUD_HID
   // Interface number, string index, protocol, report descriptor len, EP In & Out address, size & polling interval
   TUD_HID_INOUT_DESCRIPTOR(ITF_NUM_HID, STRID_HID, HID_ITF_PROTOCOL_NONE, sizeof(desc_hid_report), EPNUM_HID_OUT, EPNUM_HID_IN, CFG_TUD_HID_BUFSIZE, 10),
+#endif
 
 #if CFG_TUD_VENDOR
   // Interface number, string index, EP Out & IN address, EP size
@@ -164,7 +171,7 @@ char const* string_desc_arr [] =
   "HF2 WebUSB"
 };
 
-static uint16_t _desc_str[32+1];
+static uint16_t _desc_str[48+1];
 
 // Invoked when received GET STRING DESCRIPTOR request
 // Application return pointer to descriptor, whose contents must exist long enough for transfer to complete
@@ -208,14 +215,15 @@ uint16_t const* tud_descriptor_string_cb(uint8_t index, uint16_t langid)
       // Convert ASCII string into UTF-16
       if ( !(index < sizeof(string_desc_arr)/sizeof(string_desc_arr[0])) ) return NULL;
 
+      uint16_t const max_count = (sizeof(_desc_str)/sizeof(_desc_str[0])) - 1;
+
       const char* str = string_desc_arr[index];
+      chr_count = strlen(str);
 
       // Cap at max char
-      chr_count = strlen(str);
-      if ( chr_count > 31 ) chr_count = 31;
+      if ( chr_count > max_count ) chr_count = max_count;
 
-      for(uint8_t i=0; i<chr_count; i++)
-      {
+      for(uint8_t i=0; i<chr_count; i++) {
         _desc_str[1+i] = str[i];
       }
     }

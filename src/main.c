@@ -33,7 +33,7 @@
 #include "tusb.h"
 
 //--------------------------------------------------------------------+
-// MACRO CONSTANT TYPEDEF PROTYPES
+// MACRO CONSTANT TYPEDEF PROTOTYPES
 //--------------------------------------------------------------------+
 //#define USE_DFU_BUTTON    1
 
@@ -63,6 +63,7 @@ static bool check_dfu_mode(void);
 int main(void)
 {
   board_init();
+  if (board_init2) board_init2();
   TU_LOG1("TinyUF2\r\n");
 
 #if TINYUF2_PROTECT_BOOTLOADER
@@ -73,6 +74,8 @@ int main(void)
   if ( !check_dfu_mode() )
   {
     TU_LOG1("Jump to application\r\n");
+    if (board_teardown) board_teardown();
+    if (board_teardown2) board_teardown2();
     board_app_jump();
     while(1) {}
   }
@@ -121,6 +124,7 @@ static bool check_dfu_mode(void)
 
   // Check if app is valid
   if ( !board_app_valid() ) return true;
+  if ( board_app_valid2 && !board_app_valid2() ) return true;
 
 #if TINYUF2_DFU_DOUBLE_TAP
 //  TU_LOG1_HEX(DBL_TAP_REG);

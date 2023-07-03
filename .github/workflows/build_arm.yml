@@ -19,31 +19,42 @@ jobs:
       fail-fast: false
       matrix:
         board:
-        # Alphabetical order
+        # Alphabetical order by family
         # lpc55
         - 'double_m33_express'
         - 'lpcxpresso55s28'
         - 'lpcxpresso55s69'
+
         # mimxrt10xx
         - 'imxrt1010_evk'
+        - 'imxrt1015_evk'
         - 'imxrt1020_evk'
         - 'imxrt1024_evk'
+        - 'imxrt1040_evk'
+        - 'imxrt1050_evkb'
         - 'imxrt1060_evk'
         - 'metro_m7_1011'
+        - 'teensy40'
+        - 'teensy41'
+
         # stm32f3
         - 'stm32f303disco'
+
         # stm32f4
         - 'feather_stm32f405_express'
         - 'stm32f411ve_discovery'
         - 'stm32f411ce_blackpill'
         - 'stm32f401_blackpill'
         - 'sparkfun_stm32_thing_plus'
+
         # stm32l4
         - 'swan_r5'
         
     steps:
     - name: Setup Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.x"
 
     - name: Checkout code
       uses: actions/checkout@v3
@@ -51,7 +62,7 @@ jobs:
         fetch-depth: 0
 
     - name: Checkout common submodules in lib
-      run: git submodule update --init lib/sct_neopixel lib/tinyusb lib/uf2
+      run: git submodule update --init lib/tinyusb lib/uf2
 
     - name: Checkout linkermap
       uses: actions/checkout@v3
@@ -76,6 +87,7 @@ jobs:
     - name: Build
       run: |
         arm-none-eabi-gcc --version
+        make -C $ENV_PORT BOARD=${{ matrix.board }} get-deps
         make -C $ENV_PORT BOARD=${{ matrix.board }} all self-update copy-artifact
         for app in ${{ env.ENV_PORT }}/apps/*/; do if [ $app != 'apps/self_update/' ]; then make -C $app BOARD=${{ matrix.board }} all; fi done
 

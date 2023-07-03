@@ -29,9 +29,9 @@ __attribute__((section(".boot_hdr.boot_data")))
 /*************************************
  *  Boot Data
  *************************************/
-const BOOT_DATA_T boot_data = {
+const BOOT_DATA_T g_boot_data = {
   BOARD_BOOT_START,           /* boot start location */
-  BOARD_BOOT_LENGTH,          /* bootloader size 48K */
+  BOARD_BOOT_LENGTH,
   PLUGIN_FLAG,                /* Plugin flag*/
   0xFFFFFFFF                  /* empty - extra data word */
 };
@@ -48,7 +48,7 @@ const flexspi_nor_config_t qspiflash_config = {
     {
         .tag              = FLEXSPI_CFG_BLK_TAG,
         .version          = FLEXSPI_CFG_BLK_VERSION,
-        .readSampleClkSrc = kFlexSPIReadSampleClk_LoopbackFromDqsPad,
+        .readSampleClkSrc = kFlexSPIReadSampleClk_LoopbackFromSckPad,
         .csHoldTime       = 3u,
         .csSetupTime      = 3u,
 

@@ -38,13 +38,19 @@
 #ifndef BOARD_FLASH_APP_START
 #define BOARD_FLASH_APP_START   0x08004000
 #endif
+
+#define BOARD_PAGE_SIZE 0x800
+
 #define BOARD_RAM_START 0x20000000
 #define BOARD_RAM_SIZE 0x9FFF
 
 // Double Reset tap to enter DFU
 #define TINYUF2_DFU_DOUBLE_TAP      1
 
-//#define USE_RGB                 NEOPIXEL_NUMBER
+// Enable write protection
+#ifndef TINYUF2_PROTECT_BOOTLOADER
+#define TINYUF2_PROTECT_BOOTLOADER    1
+#endif
 
 // Brightness percentage from 1 to 255
 #ifndef NEOPIXEL_BRIGHTNESS
@@ -54,6 +60,14 @@
 #ifdef LED_PIN
 #define TINYUF2_LED 1
 #endif
+
+//--------------------------------------------------------------------+
+// Port specific APIs
+// Only used with port source
+//--------------------------------------------------------------------+
+
+// check if we just reset by option bytes load i.e protection changes
+bool board_reset_by_option_bytes(void);
 
 #ifdef __cplusplus
  }

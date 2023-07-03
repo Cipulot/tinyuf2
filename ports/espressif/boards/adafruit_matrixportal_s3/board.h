@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef ADAFRUIT_CAMERA_ESP32S2_H_
-#define ADAFRUIT_CAMERA_ESP32S2_H_
+#ifndef ADAFRUIT_MATRIXPORTAL_ESP32S3_H_
+#define ADAFRUIT_MATRIXPORTAL_ESP32S3_H_
 
 //--------------------------------------------------------------------+
 // Button
@@ -36,14 +36,14 @@
 
 // GPIO that implement 1-bit memory with RC components which hold the
 // pin value long enough for double reset detection.
-#define PIN_DOUBLE_RESET_RC   42
+#define PIN_DOUBLE_RESET_RC   1
 
 //--------------------------------------------------------------------+
 // LED
 //--------------------------------------------------------------------+
 
 // GPIO connected to Neopixel data
-#define NEOPIXEL_PIN          21
+#define NEOPIXEL_PIN          4
 
 // Brightness percentage from 1 to 255
 #define NEOPIXEL_BRIGHTNESS   0x10
@@ -53,50 +53,22 @@
 
 // LED for indicator and writing flash
 // If not defined neopixel will be use for flash writing instead
-#define LED_PIN               1
+#define LED_PIN               13
 #define LED_STATE_ON          1
-
-//--------------------------------------------------------------------+
-// TFT
-//--------------------------------------------------------------------+
-
-#define CONFIG_LCD_TYPE_ST7789V
-
-#define DISPLAY_PIN_MISO      37 // required if use CONFIG_LCD_TYPE_AUTO
-#define DISPLAY_PIN_MOSI      35
-#define DISPLAY_PIN_SCK       36
-
-#define DISPLAY_PIN_DC        40
-#define DISPLAY_PIN_CS        39
-#define DISPLAY_PIN_RST       38
-
-#define DISPLAY_PIN_BL        41
-#define DISPLAY_BL_ON         1  // GPIO state to enable back light
-
-#define DISPLAY_WIDTH         240
-#define DISPLAY_HEIGHT        240
-
-#define DISPLAY_COL_OFFSET    0
-#define DISPLAY_ROW_OFFSET    0
-
-// Memory Data Access Control & // Vertical Scroll Start Address
-#define DISPLAY_MADCTL        (TFT_MADCTL_MX | TFT_MADCTL_MY | TFT_MADCTL_MV)
-#define DISPLAY_VSCSAD        140
-
-#define DISPLAY_TITLE         "AdaCamera"
 
 //--------------------------------------------------------------------+
 // USB UF2
 //--------------------------------------------------------------------+
 
 #define USB_VID                  0x239A
-#define USB_PID                  0x0117
+#define USB_PID                  0x0125
+
 #define USB_MANUFACTURER         "Adafruit"
-#define USB_PRODUCT              "Camera"
+#define USB_PRODUCT              "MatrixPortal S3"
 
 #define UF2_PRODUCT_NAME         USB_MANUFACTURER " " USB_PRODUCT
-#define UF2_BOARD_ID             "ESP32S2-Camera-revA"
-#define UF2_VOLUME_LABEL         "CAMERABOOT"
+#define UF2_BOARD_ID             "ESP32-S3-MatrixPortal-revB"
+#define UF2_VOLUME_LABEL         "MATRXS3BOOT"
 #define UF2_INDEX_URL            "https://www.adafruit.com/"
 
 // Use favicon

@@ -59,6 +59,11 @@
 #define TINYUF2_PROTECT_BOOTLOADER  0
 #endif
 
+// Bootloader often has limited ROM than RAM and prefer to use RAM for data
+#ifndef TINYUF2_CONST
+#define TINYUF2_CONST
+#endif
+
 // Use favicon.ico + autorun.inf (only works with windows)
 // define TINYUF2_FAVICON_HEADER to enable this feature
 
@@ -78,7 +83,19 @@
 #define BOARD_UART_BAUDRATE   115200
 
 // Init basic peripherals such as clock, led indicator control (gpio, pwm etc ..)
+// This API does not init usb which is only init if DFU is entered
 void board_init(void);
+
+// board_init2 is the same as board_init, but allows custom boards
+// to have a chance at board_init without modifying the boards.c file.
+void board_init2(void) __attribute__ ((weak));
+
+// opposite to board_init(), reset all board peripherals. Is called before jumping to application
+// TODO force this API in the future
+void board_teardown(void) __attribute__ ((weak));
+
+// board_teardown2() is called immeidately after board_init()
+void board_teardown2(void) __attribute__ ((weak));
 
 // Reset board, not return
 void board_reset(void);
@@ -106,6 +123,9 @@ extern void board_timer_handler(void);
 
 // Check if application is valid
 bool board_app_valid(void);
+
+// Additional check if application is valid for custom board.
+bool board_app_valid2(void) __attribute__ ((weak));
 
 // Jump to Application
 void board_app_jump(void);

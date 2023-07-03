@@ -46,6 +46,10 @@ const uint8_t dcd_data[] = { 0x00 };
 
 void board_init(void)
 {
+#if defined(__DCACHE_PRESENT) && __DCACHE_PRESENT
+  if (SCB_CCR_DC_Msk != (SCB_CCR_DC_Msk & SCB->CCR)) SCB_EnableDCache();
+#endif
+
   // Init clock
   BOARD_BootClockRUN();
 
@@ -61,7 +65,7 @@ void board_init(void)
   SNVS->LPCR |= SNVS_LPCR_GPR_Z_DIS_MASK;
 
 #ifdef LED_PINMUX
-  IOMUXC_SetPinMux(LED_PINMUX, 0U);
+  IOMUXC_SetPinMux(LED_PINMUX, 0);
   IOMUXC_SetPinConfig(LED_PINMUX, 0x10B0U);
 
   gpio_pin_config_t led_config = { kGPIO_DigitalOutput, 0, kGPIO_NoIntmode };
@@ -69,17 +73,11 @@ void board_init(void)
 #endif
 
 #if NEOPIXEL_NUMBER
-  IOMUXC_SetPinMux( NEOPIXEL_PINMUX, 0U);
-  IOMUXC_SetPinConfig( NEOPIXEL_PINMUX, 0x10B0U);
+  IOMUXC_SetPinMux(NEOPIXEL_PINMUX, 0);
+  IOMUXC_SetPinConfig(NEOPIXEL_PINMUX, 0x10B0U);
 
   gpio_pin_config_t neopixel_config = { kGPIO_DigitalOutput, 0, kGPIO_NoIntmode };
   GPIO_PinInit(NEOPIXEL_PORT, NEOPIXEL_PIN, &neopixel_config);
-#endif
-
-#ifdef BUTTON_PIN
-  IOMUXC_SetPinMux(BUTTON_PINMUX, 0U);
-  gpio_pin_config_t button_config = { kGPIO_DigitalInput, 0, kGPIO_IntRisingEdge, };
-  GPIO_PinInit(BUTTON_PORT, BUTTON_PIN, &button_config);
 #endif
 
 #if TUF2_LOG
@@ -87,16 +85,34 @@ void board_init(void)
 #endif
 }
 
+void board_teardown(void)
+{
+  // no GPIO deinit for GPIO: LED, Neopixel, Button
+#if TUF2_LOG && defined(UART_DEV)
+  LPUART_Deinit(UART_DEV);
+#endif
+}
+
 void board_usb_init(void)
 {
+  USBPHY_Type* usb_phy;
+
+#if BOARD_TUD_RHPORT == 0
   // Clock
   CLOCK_EnableUsbhs0PhyPllClock(kCLOCK_Usbphy480M, 480000000U);
   CLOCK_EnableUsbhs0Clock(kCLOCK_Usb480M, 480000000U);
 
-#ifdef USBPHY1
-  USBPHY_Type* usb_phy = USBPHY1;
-#else
-  USBPHY_Type* usb_phy = USBPHY;
+  #ifdef USBPHY1
+  usb_phy = USBPHY1;
+  #else
+  usb_phy = USBPHY;
+  #endif
+
+#elif BOARD_TUD_RHPORT == 1
+  // USB1
+  CLOCK_EnableUsbhs1PhyPllClock(kCLOCK_Usbphy480M, 480000000U);
+  CLOCK_EnableUsbhs1Clock(kCLOCK_Usb480M, 480000000U);
+  usb_phy = USBPHY2;
 #endif
 
   // Enable PHY support for Low speed device + LS via FS Hub
@@ -110,10 +126,6 @@ void board_usb_init(void)
   phytx &= ~(USBPHY_TX_D_CAL_MASK | USBPHY_TX_TXCAL45DM_MASK | USBPHY_TX_TXCAL45DP_MASK);
   phytx |= USBPHY_TX_D_CAL(0x0C) | USBPHY_TX_TXCAL45DP(0x06) | USBPHY_TX_TXCAL45DM(0x06);
   usb_phy->TX = phytx;
-
-  // USB1
-//  CLOCK_EnableUsbhs1PhyPllClock(kCLOCK_Usbphy480M, 480000000U);
-//  CLOCK_EnableUsbhs1Clock(kCLOCK_Usb480M, 480000000U);
 }
 
 void board_dfu_init(void)
@@ -123,7 +135,7 @@ void board_dfu_init(void)
   _dfu_mode = true;
 
 #ifdef LED_PWM_PINMUX
-  IOMUXC_SetPinMux(LED_PWM_PINMUX, 0U);
+  IOMUXC_SetPinMux(LED_PWM_PINMUX, 0);
   IOMUXC_SetPinConfig(LED_PWM_PINMUX, 0x10B0U);
 
   CLOCK_SetDiv(kCLOCK_AhbDiv, 0x2); /* Set AHB PODF to 2, divide by 3 */
@@ -158,7 +170,11 @@ void board_dfu_init(void)
 
 uint8_t board_usb_get_serial(uint8_t serial_id[16])
 {
+  #if FSL_FEATURE_OCOTP_HAS_TIMING_CTRL
   OCOTP_Init(OCOTP, CLOCK_GetFreq(kCLOCK_IpgClk));
+  #else
+  OCOTP_Init(OCOTP, 0u);
+  #endif
 
   // Reads shadow registers 0x01 - 0x04 (Configuration and Manufacturing Info)
   // into 8 bit wide destination, avoiding punning.
@@ -250,8 +266,6 @@ void SysTick_Handler(void)
 
 void board_led_write(uint32_t value)
 {
-  (void) value;
-
 #ifdef LED_PINMUX
 #ifdef LED_PWM_PINMUX
   if (_dfu_mode)
@@ -262,6 +276,7 @@ void board_led_write(uint32_t value)
   }else
 #endif
   {
+    value = (value >= 128) ? 1 : 0;
     GPIO_PinWrite(LED_PORT, LED_PIN, value ? LED_STATE_ON : (1-LED_STATE_ON));
   }
 #endif
@@ -279,6 +294,10 @@ static inline uint8_t apply_percentage(uint8_t brightness)
 
 void board_rgb_write(uint8_t const rgb[])
 {
+  enum {
+    PIN_MASK = (1u << NEOPIXEL_PIN)
+  };
+
   // neopixel color order is GRB
   uint8_t const pixels[3] = { apply_percentage(rgb[1]), apply_percentage(rgb[0]), apply_percentage(rgb[2]) };
   uint32_t const numBytes = 3;
@@ -296,6 +315,9 @@ void board_rgb_write(uint8_t const rgb[])
   uint32_t const t0       = sys_freq/MAGIC_800_T0H;
   uint32_t const t1       = sys_freq/MAGIC_800_T1H;
 
+  volatile uint32_t* reg_set = &NEOPIXEL_PORT->DR_SET;
+  volatile uint32_t* reg_clr = &NEOPIXEL_PORT->DR_CLEAR;
+
   __disable_irq();
 
   // Enable DWT in debug core. Useable when interrupts disabled, as opposed to Systick->VAL
@@ -303,15 +325,16 @@ void board_rgb_write(uint8_t const rgb[])
   DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
   DWT->CYCCNT = 0;
 
-  for(;;) {
+  while(1) {
     cyc = (pix & mask) ? t1 : t0;
+    while((DWT->CYCCNT - start) < interval);
+
     start = DWT->CYCCNT;
 
-    GPIO_PinWrite(NEOPIXEL_PORT, NEOPIXEL_PIN, 1);
+    *reg_set = PIN_MASK;
     while((DWT->CYCCNT - start) < cyc);
 
-    GPIO_PinWrite(NEOPIXEL_PORT, NEOPIXEL_PIN, 0);
-    while((DWT->CYCCNT - start) < interval);
+    *reg_clr = PIN_MASK;
 
     if(!(mask >>= 1)) {
       if(p >= end) break;
@@ -332,26 +355,19 @@ void board_rgb_write(uint8_t const rgb[])
 
 #endif
 
-#if 0
-uint32_t board_button_read(void)
-{
-  // active low
-  return BUTTON_STATE_ACTIVE == GPIO_PinRead(BUTTON_PORT, BUTTON_PIN);
-}
-#endif
-
 //--------------------------------------------------------------------+
 // UART
 //--------------------------------------------------------------------+
 
+#ifdef UART_DEV
 void board_uart_init(uint32_t baud_rate)
 {
-#ifdef UART_DEV
   // Enable UART when debug log is on
-  IOMUXC_SetPinMux(UART_TX_PINMUX, 0U);
-  IOMUXC_SetPinMux(UART_RX_PINMUX, 0U);
-  IOMUXC_SetPinConfig(UART_TX_PINMUX, 0x10B0u);
-  IOMUXC_SetPinConfig(UART_RX_PINMUX, 0x10B0u);
+  IOMUXC_SetPinMux(UART_RX_PINMUX, 0);
+  IOMUXC_SetPinMux(UART_TX_PINMUX, 0);
+
+  IOMUXC_SetPinConfig(UART_RX_PINMUX, 0x10A0U);
+  IOMUXC_SetPinConfig(UART_TX_PINMUX, 0x10A0U);
 
   lpuart_config_t uart_config;
   LPUART_GetDefaultConfig(&uart_config);
@@ -370,60 +386,79 @@ void board_uart_init(uint32_t baud_rate)
   }
 
   LPUART_Init(UART_DEV, &uart_config, freq);
-#endif
 }
 
 int board_uart_write(void const * buf, int len)
 {
-#ifdef UART_DEV
-  uint8_t const* buf8 = (uint8_t const*) buf;
-  int count = 0;
-
-  while(count < len)
-  {
-    if (LPUART_GetStatusFlags(UART_DEV) & kLPUART_TxDataRegEmptyFlag)
-    {
-      LPUART_WriteByte(UART_DEV, *buf8++);
-      count++;
-    }
-  }
-
+  LPUART_WriteBlocking(UART_DEV, (uint8_t const*) buf, (size_t) len);
   return len;
-
-#else
-
-  (void) buf; (void) len;
-  return 0;
-#endif
 }
 
 // optional API, not included in board_api.h
 int board_uart_read(uint8_t* buf, int len)
 {
-#ifdef UART_DEV
   int count = 0;
 
   while( count < len )
   {
-    if ( !((UART_DEV->WATER & LPUART_WATER_RXCOUNT_MASK) >> LPUART_WATER_RXCOUNT_SHIFT) ) break;
+    uint8_t const rx_count = LPUART_GetRxFifoCount(UART_DEV);
+    if (!rx_count)
+    {
+      // clear all error flag if any
+      uint32_t status_flags = LPUART_GetStatusFlags(UART_DEV);
+      status_flags  &= (kLPUART_RxOverrunFlag | kLPUART_ParityErrorFlag | kLPUART_FramingErrorFlag | kLPUART_NoiseErrorFlag);
+      LPUART_ClearStatusFlags(UART_DEV, status_flags);
+      break;
+    }
 
-    buf[count] = LPUART_ReadByte(UART_DEV);
-    count++;
+    for(int i=0; i<rx_count; i++)
+    {
+      buf[count] = LPUART_ReadByte(UART_DEV);
+      count++;
+    }
   }
 
   return count;
+}
 
 #else
 
+void board_uart_init(uint32_t baud_rate)
+{
+  (void) baud_rate;
+}
+
+int board_uart_write(void const * buf, int len)
+{
   (void) buf; (void) len;
   return 0;
-#endif
 }
+
+int board_uart_read(uint8_t* buf, int len)
+{
+  (void) buf; (void) len;
+  return 0;
+}
+#endif
+
 
 //--------------------------------------------------------------------+
 // USB Interrupt Handler
 //--------------------------------------------------------------------+
 #ifndef BUILD_NO_TINYUSB
+
+// The iMX RT 1040 is named without a number. We can always have this because
+// it'll get GC'd when not used.
+void USB_OTG_IRQHandler(void)
+{
+  #if CFG_TUSB_RHPORT0_MODE & OPT_MODE_HOST
+    tuh_int_handler(0);
+  #endif
+
+  #if CFG_TUSB_RHPORT0_MODE & OPT_MODE_DEVICE
+    tud_int_handler(0);
+  #endif
+}
 
 void USB_OTG1_IRQHandler(void)
 {

@@ -29,9 +29,9 @@ __attribute__((section(".boot_hdr.boot_data")))
 /*************************************
  *  Boot Data
  *************************************/
-const BOOT_DATA_T boot_data = {
+const BOOT_DATA_T g_boot_data = {
   BOARD_BOOT_START,           /* boot start location */
-  BOARD_BOOT_LENGTH,          /* bootloader size 48K */
+  BOARD_BOOT_LENGTH,
   PLUGIN_FLAG,                /* Plugin flag */
   0xFFFFFFFF                  /* empty - extra data word */
 };
