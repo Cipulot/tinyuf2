@@ -65,8 +65,8 @@
 #define DISPLAY_PIN_CS        39
 #define DISPLAY_PIN_RST       38
 
-#define DISPLAY_PIN_BL        -1 // no backlight control
-//#define DISPLAY_BL_ON         1  // GPIO state to enable back light
+#define DISPLAY_PIN_BL        45
+#define DISPLAY_BL_ON         1  // GPIO state to enable back light
 
 #define DISPLAY_WIDTH         240
 #define DISPLAY_HEIGHT        240
@@ -76,9 +76,9 @@
 
 // Memory Data Access Control & // Vertical Scroll Start Address
 #define DISPLAY_MADCTL        (TFT_MADCTL_MX | TFT_MADCTL_MY | TFT_MADCTL_MV)
-#define DISPLAY_VSCSAD        140
+#define DISPLAY_VSCSAD        80
 
-#define DISPLAY_TITLE         "AdaCamera"
+#define DISPLAY_TITLE         "PyCamera"
 
 //--------------------------------------------------------------------+
 // USB UF2
@@ -87,7 +87,7 @@
 #define USB_VID                  0x239A
 #define USB_PID                  0x0117
 #define USB_MANUFACTURER         "Adafruit"
-#define USB_PRODUCT              "Camera"
+#define USB_PRODUCT              "PyCamera"
 
 #define UF2_PRODUCT_NAME         USB_MANUFACTURER " " USB_PRODUCT
 #define UF2_BOARD_ID             "ESP32S3-Camera-revC"

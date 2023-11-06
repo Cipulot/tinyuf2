@@ -2,6 +2,12 @@
 # Common make definition for all
 # ---------------------------------------
 
+PYTHON3 ?= python3
+MKDIR = mkdir
+SED = sed
+CP = cp
+RM = rm
+
 CC = $(CROSS_COMPILE)gcc
 OBJCOPY = $(CROSS_COMPILE)objcopy
 SIZE = $(CROSS_COMPILE)size
@@ -18,6 +24,8 @@ TOP := $(shell realpath $(THIS_MAKEFILE))
 TOP := $(patsubst %/ports/make.mk,%,$(TOP))
 
 CURRENT_PATH := $(shell realpath --relative-to=$(TOP) `pwd`)
+
+UF2CONV_PY = $(PYTHON3) $(TOP)/lib/uf2/utils/uf2conv.py
 
 #-------------- Handy check parameter function ------------
 check_defined = \
@@ -47,15 +55,8 @@ BIN = $(TOP)/$(PORT_DIR)/_bin/$(BOARD)
 # can be set manually by custom build such as flash_nuke
 OUTNAME ?= tinyuf2-$(BOARD)
 
-# UF2 version with git tag and submodules
-GIT_VERSION := $(shell git describe --dirty --always --tags)
-GIT_SUBMODULE_VERSIONS := $(shell git submodule status $(addprefix ../../lib/,$(GIT_SUBMODULES)) | cut -b 43- | paste -s -d" " -)
-GIT_SUBMODULE_VERSIONS := $(subst ../../lib/,,$(GIT_SUBMODULE_VERSIONS))
-
 CFLAGS += \
   -DBOARD_UF2_FAMILY_ID=$(UF2_FAMILY_ID) \
-  -DUF2_VERSION_BASE='"$(GIT_VERSION)"'\
-  -DUF2_VERSION='"$(GIT_VERSION) - $(GIT_SUBMODULE_VERSIONS)"'
 
 #-------------- Bootloader --------------
 # skip bootloader src if building application
@@ -64,6 +65,15 @@ ifdef BUILD_APPLICATION
 CFLAGS += -DBUILD_APPLICATION
 
 else
+
+# UF2 version with git tag and submodules
+GIT_VERSION := $(shell git describe --dirty --always --tags)
+GIT_SUBMODULE_VERSIONS := $(shell git submodule status $(addprefix ../../lib/,$(GIT_SUBMODULES)) | cut -b 43- | paste -s -d" " -)
+GIT_SUBMODULE_VERSIONS := $(subst ../../lib/,,$(GIT_SUBMODULE_VERSIONS))
+
+CFLAGS += \
+  -DUF2_VERSION_BASE='"$(GIT_VERSION)"'\
+  -DUF2_VERSION='"$(GIT_VERSION) - $(GIT_SUBMODULE_VERSIONS)"'\
 
 # Bootloader src, board folder and TinyUSB stack
 SRC_C += \

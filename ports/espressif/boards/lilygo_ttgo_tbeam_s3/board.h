@@ -59,4 +59,4 @@
 #define UF2_PRODUCT_NAME  USB_MANUFACTURER " " USB_PRODUCT
 #define UF2_BOARD_ID      "ESP32S3-TBeam-v3.0"
 #define UF2_VOLUME_LABEL  "TBEAMBOOT"
-#define UF2_INDEX_URL     "http://www.lilygo.cn/claprod_view.aspx?Id=1163"
+#define UF2_INDEX_URL     "https://www.lilygo.cc/products/softrf-t-beamsupreme"
