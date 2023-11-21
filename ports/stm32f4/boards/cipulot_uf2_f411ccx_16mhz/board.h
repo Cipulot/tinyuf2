@@ -66,7 +66,7 @@
 #define UF2_PRODUCT_NAME  USB_MANUFACTURER " " USB_PRODUCT
 #define UF2_BOARD_ID      "Cipulot_UF2"
 #define UF2_VOLUME_LABEL  "Cipulot_UF2"
-#define UF2_INDEX_URL     "https://github.com/Cipulot"
+#define UF2_INDEX_URL     "https://cipulot.squarespace.com"
 
 #define USB_NO_VBUS_PIN   1
 
