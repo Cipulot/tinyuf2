@@ -1,4 +1,4 @@
-/* 
+/*
  * The MIT License (MIT)
  *
  * Copyright (c) 2020 Ha Thach (tinyusb.org) for Adafruit Industries
@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef ADAFRUIT_TFTEXP_ESP32S3_H_
-#define ADAFRUIT_TFTEXP_ESP32S3_H_
+#ifndef SENSEBOX_MCU_ESP32S2_H_
+#define SENSEBOX_MCU_ESP32S2_H_
 
 //--------------------------------------------------------------------+
 // Button
@@ -34,16 +34,15 @@
 // reset since that will instead run the 1st stage ROM bootloader
 #define PIN_BUTTON_UF2        0
 
-// GPIO that implement 1-bit memory with RC components which hold the
-// pin value long enough for double reset detection.
-#define PIN_DOUBLE_RESET_RC   5
 
 //--------------------------------------------------------------------+
 // LED
 //--------------------------------------------------------------------+
 
 // GPIO connected to Neopixel data
-#define NEOPIXEL_PIN          4
+#define NEOPIXEL_PIN          1
+
+#define NEOPIXEL_POWER_STATE  1
 
 // Brightness percentage from 1 to 255
 #define NEOPIXEL_BRIGHTNESS   0x10
@@ -51,21 +50,22 @@
 // Number of neopixels
 #define NEOPIXEL_NUMBER       1
 
+
 //--------------------------------------------------------------------+
 // USB UF2
 //--------------------------------------------------------------------+
 
-#define USB_VID                  0x239A
-#define USB_PID                  0x0147
-#define USB_MANUFACTURER         "Adafruit"
-#define USB_PRODUCT              "TFT Experimenter ESP32-S3"
+#define USB_VID                  0x303A
+#define USB_PID                  0x81BA
+#define USB_MANUFACTURER         "senseBox"
+#define USB_PRODUCT              "MCU-S2 ESP32S2"
 
 #define UF2_PRODUCT_NAME         USB_MANUFACTURER " " USB_PRODUCT
-#define UF2_BOARD_ID             "ESP32S3-TFTExp-revA"
-#define UF2_VOLUME_LABEL         "TFT_S3BOOT"
-#define UF2_INDEX_URL            "https://www.adafruit.com/"
+#define UF2_BOARD_ID             "ESP32S2-senseBoxMCUS2-rev2.1"
+#define UF2_VOLUME_LABEL         "senseBox"
+#define UF2_INDEX_URL            "https://sensebox.de"
 
 // Use favicon
-#define TINYUF2_FAVICON_HEADER   "favicon_adafruit_256.h"
+#define TINYUF2_FAVICON_HEADER   "favicon_sensebox_256.h"
 
 #endif
