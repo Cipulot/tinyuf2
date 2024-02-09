@@ -22,57 +22,46 @@
  * THE SOFTWARE.
  */
 
-#ifndef BOARDS_H_
-#define BOARDS_H_
+#ifndef UNEXPECTEDMAKER_BLING_H_
+#define UNEXPECTEDMAKER_BLING_H_
 
-#ifdef __cplusplus
- extern "C" {
-#endif
+//--------------------------------------------------------------------+
+// Button
+//--------------------------------------------------------------------+
 
-#include "stm32f3xx.h"
-#include "stm32f3xx_hal_conf.h"
+// Enter UF2 mode if GPIO is pressed while 2nd stage bootloader indicator
+// is on e.g RGB = Purple. If it is GPIO0, user should not hold this while
+// reset since that will instead run the 1st stage ROM bootloader
+#define PIN_BUTTON_UF2        0
 
-#include "board.h"
+//--------------------------------------------------------------------+
+// LED
+//--------------------------------------------------------------------+
 
-#define BOARD_FLASH_ADDR_ZERO   0x08000000
+// GPIO connected to Neopixel data
+#define NEOPIXEL_PIN          18
 
-// Flash Start Address of Application
-#ifndef BOARD_FLASH_APP_START
-#define BOARD_FLASH_APP_START   0x08004000
-#endif
-
-#define BOARD_PAGE_SIZE 0x800
-
-#define BOARD_RAM_START 0x20000000
-#define BOARD_RAM_SIZE 0x9FFF
-
-// Double Reset tap to enter DFU
-#define TINYUF2_DFU_DOUBLE_TAP      1
-
-// Enable write protection
-#ifndef TINYUF2_PROTECT_BOOTLOADER
-#define TINYUF2_PROTECT_BOOTLOADER    1
-#endif
+#define NEOPIXEL_POWER_PIN    6
+#define NEOPIXEL_POWER_STATE  1
 
 // Brightness percentage from 1 to 255
-#ifndef NEOPIXEL_BRIGHTNESS
-#define NEOPIXEL_BRIGHTNESS   0x10
-#endif
+#define NEOPIXEL_BRIGHTNESS   0x64
 
-#ifdef LED_PIN
-#define TINYUF2_LED 1
-#endif
+// Number of neopixels
+#define NEOPIXEL_NUMBER       1
 
 //--------------------------------------------------------------------+
-// Port specific APIs
-// Only used with port source
+// USB UF2
 //--------------------------------------------------------------------+
 
-// check if we just reset by option bytes load i.e protection changes
-bool board_reset_by_option_bytes(void);
+#define USB_VID           0x303A
+#define USB_PID           0x8181
+#define USB_MANUFACTURER  "Unexpected Maker"
+#define USB_PRODUCT       "Bling!"
 
-#ifdef __cplusplus
- }
+#define UF2_PRODUCT_NAME  USB_MANUFACTURER " " USB_PRODUCT
+#define UF2_BOARD_ID      "ESP32S3-Bling"
+#define UF2_VOLUME_LABEL  "BLINGBOOT"
+#define UF2_INDEX_URL     "https://circuitpython.org/board/unexpectedmaker_bling/"
+
 #endif
-
-#endif /* BOARDS_H_ */
