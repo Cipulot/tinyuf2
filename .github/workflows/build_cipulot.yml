@@ -20,6 +20,7 @@ jobs:
         board:
           # Alphabetical order
           # stm32f4
+          - "seneca"
           - "cipulot_uf2_f401cbx_8mhz"
           - "cipulot_uf2_f401ccx_8mhz"
           - "cipulot_uf2_f401cex_8mhz"
