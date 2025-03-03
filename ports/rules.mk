@@ -64,13 +64,10 @@ clean:
 	$(RM) -rf $(BUILD)
 	$(RM) -rf $(BIN)
 
-# get depenecies
+# get dependencies
 .PHONY: get-deps
 get-deps:
-  ifdef GIT_SUBMODULES
-	git -C $(TOP) submodule update --init $(addprefix lib/,$(GIT_SUBMODULES))
-  endif
-
+	$(PYTHON3) $(TOP)/tools/get_deps.py --board $(BOARD)
 
 #-------------- Artifacts --------------
 SELF_UF2 ?= apps/self_update/$(BUILD)/update-$(OUTNAME).uf2
@@ -199,3 +196,19 @@ flash-dfu-util: $(BUILD)/$(OUTNAME).bin
 
 erase-dfu-util:
 	dfu-util -R -a 0 --dfuse-address 0x08000000:mass-erase:force
+
+# --------------- openocd-wch -----------------
+# wch-linke is not supported yet in official openOCD yet. We need to either use
+# 1. download openocd as part of mounriver studio http://www.mounriver.com/download or
+# 2. compiled from https://github.com/hathach/riscv-openocd-wch or
+#    https://github.com/dragonlock2/miscboards/blob/main/wch/SDK/riscv-openocd.tar.xz
+#    with  ./configure --disable-werror --enable-wlinke --enable-ch347=no
+OPENOCD_WCH ?= /home/${USER}/app/riscv-openocd-wch/src/openocd
+OPENOCD_WCH_OPTION ?=
+flash-openocd-wch: $(BUILD)/$(OUTNAME).elf
+	$(OPENOCD_WCH) $(OPENOCD_WCH_OPTION) -c init -c halt -c "flash write_image $<" -c reset -c exit
+
+#-------------------- Flash with uf2 -----------------
+UF2CONV_PY = $(TOP)/lib/uf2/utils/uf2conv.py
+flash-uf2: $(BUILD)/$(OUTNAME).uf2
+	python ${UF2CONV_PY} -f ${UF2_FAMILY_ID} --deploy $^

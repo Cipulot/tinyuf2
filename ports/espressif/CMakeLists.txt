@@ -11,6 +11,7 @@ set(SDKCONFIG_DEFAULTS ${CMAKE_CURRENT_LIST_DIR}/sdkconfig.defaults ${CMAKE_CURR
 set(SDKCONFIG ${CMAKE_BINARY_DIR}/sdkconfig)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+idf_build_set_property(EXTRA_CMAKE_ARGS -DBOARD=${BOARD}) # Pass BOARD to bootloader
 
 execute_process(COMMAND git describe --dirty --always --tags
                 OUTPUT_VARIABLE GIT_VERSION)
@@ -23,8 +24,10 @@ string(REPLACE ../ "" GIT_SUBMODULE_VERSIONS ${GIT_SUBMODULE_VERSIONS})
 string(REPLACE lib/ "" GIT_SUBMODULE_VERSIONS ${GIT_SUBMODULE_VERSIONS})
 string(STRIP ${GIT_SUBMODULE_VERSIONS} GIT_SUBMODULE_VERSIONS)
 
-add_compile_definitions(UF2_VERSION_BASE="${GIT_VERSION}")
-add_compile_definitions(UF2_VERSION="${GIT_VERSION} - ${GIT_SUBMODULE_VERSIONS}")
+add_compile_definitions(
+  UF2_VERSION_BASE="${GIT_VERSION}"
+  UF2_VERSION="${GIT_VERSION} - ${GIT_SUBMODULE_VERSIONS}"
+  )
 
 cmake_print_variables(GIT_VERSION GIT_SUBMODULE_VERSIONS)
 
@@ -39,8 +42,8 @@ add_custom_command(TARGET app POST_BUILD
 # Post build: update arduino-esp32 bootloader for debug purpose
 # -------------------------------------------------------------
 if (0)
-  #set(ARDUINO_VARIANT_DIR /home/hathach/code/arduino-esp32/variants/${BOARD})
-  set(ARDUINO_VARIANT_DIR /home/hathach/code/arduino-esp32/variants/adafruit_feather_esp32s3)
+  set(ARDUINO_VARIANT_DIR $ENV{HOME}/code/arduino-esp32/variants/${BOARD})
+  #set(ARDUINO_VARIANT_DIR $ENV{HOME}/code/arduino-esp32/variants/adafruit_feather_esp32s3_nopsram)
 
   add_custom_command(TARGET bootloader POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/bootloader/bootloader.bin ${ARDUINO_VARIANT_DIR}/bootloader-tinyuf2.bin
@@ -48,18 +51,5 @@ if (0)
 
   add_custom_command(TARGET app POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/tinyuf2.bin ${ARDUINO_VARIANT_DIR}/tinyuf2.bin
-    )
-
-  file(STRINGS ${CMAKE_CURRENT_LIST_DIR}/boards/${BOARD}/sdkconfig SDKCONFIG_CONTENTS)
-  foreach (line ${SDKCONFIG_CONTENTS})
-    if (line MATCHES "CONFIG_PARTITION_TABLE_CUSTOM_FILENAME=\"(.*).csv\"")
-      set(PARTITION_TABLE_CSV ${CMAKE_MATCH_1})
-      cmake_print_variables(PARTITION_TABLE_CSV)
-      break()
-    endif ()
-  endforeach ()
-
-  add_custom_command(TARGET app POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/${PARTITION_TABLE_CSV}.csv ${ARDUINO_VARIANT_DIR}/${PARTITION_TABLE_CSV}-tinyuf2.csv
     )
 endif ()

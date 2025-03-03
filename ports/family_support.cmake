@@ -110,8 +110,9 @@ function(family_configure_common TARGET)
 
   # Generate map file
   target_link_options(${TARGET} PUBLIC "LINKER:-Map=$<TARGET_FILE:${TARGET}>.map")
+  #family_add_linkermap(${TARGET})
 
-  # All executable target linked with board target
+  # executable target linked with board target
   family_add_board_target(board_${BOARD})
   target_link_libraries(${TARGET} PUBLIC board_${BOARD})
 
@@ -162,7 +163,6 @@ function(family_add_tinyusb TARGET OPT_MCU RTOS)
   add_subdirectory(${TOP}/lib/tinyusb/src ${CMAKE_CURRENT_BINARY_DIR}/tinyusb)
 
   if (RTOS STREQUAL "freertos")
-    # link tinyusb with freeRTOS kernel
     target_link_libraries(${TARGET}-tinyusb PUBLIC freertos_kernel)
   endif ()
 
@@ -174,21 +174,21 @@ endfunction()
 function(family_add_uf2version TARGET DEPS_REPO)
   execute_process(COMMAND ${GIT_EXECUTABLE} describe --dirty --always --tags OUTPUT_VARIABLE GIT_VERSION)
   string(STRIP ${GIT_VERSION} GIT_VERSION)
-  string(REPLACE ${TOP}/ "" DEPS_REPO "${DEPS_REPO}")
-  foreach (DEP ${DEPS_REPO})
-    execute_process(COMMAND ${GIT_EXECUTABLE} -C ${TOP} submodule status ${DEP}
-      OUTPUT_VARIABLE DEP_VERSION
-      )
-    string(STRIP ${DEP_VERSION} DEP_VERSION)
-    string(FIND "${DEP_VERSION}" " " SPACE_POS)
-    string(SUBSTRING "${DEP_VERSION}" ${SPACE_POS} -1 DEP_VERSION)
-    string(STRIP ${DEP_VERSION} DEP_VERSION)
-
-    set(GIT_SUBMODULE_VERSIONS "${GIT_SUBMODULE_VERSIONS} ${DEP_VERSION}")
-  endforeach ()
-
-  string(STRIP ${GIT_SUBMODULE_VERSIONS} GIT_SUBMODULE_VERSIONS)
-  string(REPLACE lib/ "" GIT_SUBMODULE_VERSIONS ${GIT_SUBMODULE_VERSIONS})
+#  string(REPLACE ${TOP}/ "" DEPS_REPO "${DEPS_REPO}")
+#  foreach (DEP ${DEPS_REPO})
+#    execute_process(COMMAND ${GIT_EXECUTABLE} -C ${TOP} submodule status ${DEP}
+#      OUTPUT_VARIABLE DEP_VERSION
+#      )
+#    string(STRIP ${DEP_VERSION} DEP_VERSION)
+#    string(FIND "${DEP_VERSION}" " " SPACE_POS)
+#    string(SUBSTRING "${DEP_VERSION}" ${SPACE_POS} -1 DEP_VERSION)
+#    string(STRIP ${DEP_VERSION} DEP_VERSION)
+#
+#    set(GIT_SUBMODULE_VERSIONS "${GIT_SUBMODULE_VERSIONS} ${DEP_VERSION}")
+#  endforeach ()
+#
+#  string(STRIP ${GIT_SUBMODULE_VERSIONS} GIT_SUBMODULE_VERSIONS)
+#  string(REPLACE lib/ "" GIT_SUBMODULE_VERSIONS ${GIT_SUBMODULE_VERSIONS})
 
   cmake_print_variables(GIT_VERSION)
   cmake_print_variables(GIT_SUBMODULE_VERSIONS)
@@ -202,20 +202,15 @@ endfunction()
 function(family_configure_tinyuf2 TARGET OPT_MCU)
   family_configure_common(${TARGET})
 
-  #target_include_directories(${TARGET} PUBLIC)
-  #target_compile_definitions(${TARGET} PUBLIC)
   include(${TOP}/src/tinyuf2.cmake)
   add_tinyuf2(${TARGET})
 
   family_add_uf2version(${TARGET} "${FAMILY_SUBMODULE_DEPS}")
-
-  family_add_tinyusb(tinyuf2 ${OPT_MCU} none)
+  family_add_tinyusb(${TARGET} ${OPT_MCU} none)
 endfunction()
 
-#----------------------------------
-# Output
-#----------------------------------
 
+# Add bin/hex output
 function(family_add_bin_hex TARGET)
   add_custom_command(TARGET ${TARGET} POST_BUILD
     COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:${TARGET}> $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.bin
@@ -239,10 +234,16 @@ function(family_add_uf2 TARGET FAMILY_ID)
   set(BIN_FILE $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.${BIN_EXT})
 
   add_custom_command(TARGET ${TARGET} POST_BUILD
+    COMMAND echo ${Python_EXECUTABLE} ${UF2CONV_PY} -f ${FAMILY_ID} ${ADDR_OPT} -c -o $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.uf2 ${BIN_FILE}
     COMMAND ${Python_EXECUTABLE} ${UF2CONV_PY} -f ${FAMILY_ID} ${ADDR_OPT} -c -o $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.uf2 ${BIN_FILE}
     VERBATIM)
 endfunction()
 
+function(family_add_linkermap TARGET)
+  add_custom_command(TARGET ${TARGET} POST_BUILD
+    COMMAND linkermap -v $<TARGET_FILE:${TARGET}>.map
+    VERBATIM)
+endfunction()
 
 #----------------------------------
 # Flashing target
@@ -254,12 +255,17 @@ function(family_flash_jlink TARGET)
     set(JLINKEXE JLinkExe)
   endif ()
 
+  if (NOT DEFINED JLINK_IF)
+    set(JLINK_IF swd)
+  endif ()
+
   if (ARGC GREATER 1)
     set(BIN_FILE $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.${ARGV1})
   else ()
     set(BIN_FILE $<TARGET_FILE:${TARGET}>)
   endif ()
 
+  # flash with jlink
   file(GENERATE
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.jlink
     CONTENT "halt
@@ -271,7 +277,18 @@ exit"
 
   add_custom_target(${TARGET}-jlink
     DEPENDS ${TARGET}
-    COMMAND ${JLINKEXE} -device ${JLINK_DEVICE} -if swd -JTAGConf -1,-1 -speed auto -CommandFile ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.jlink
+    COMMAND ${JLINKEXE} -device ${JLINK_DEVICE} -if ${JLINK_IF} -JTAGConf -1,-1 -speed auto -CommandFile ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.jlink
+    )
+
+  # erase with jlink
+  file(GENERATE
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}-erase.jlink
+    CONTENT "halt
+erase
+exit
+  ")
+  add_custom_target(${TARGET}-erase-jlink
+    COMMAND ${JLINKEXE} -device ${JLINK_DEVICE} -if ${JLINK_IF} -JTAGConf -1,-1 -speed auto -CommandFile ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}-erase.jlink
     )
 endfunction()
 
@@ -289,45 +306,35 @@ function(family_flash_stlink TARGET)
 endfunction()
 
 
-# Add flash pycod targe,t optional parameter is the extension of the binary file (default is elf)
-## If bin file is used, address is also required
-function(family_flash_pyocd TARGET)
-  if (NOT DEFINED PYOC)
-    set(PYOCD pyocd)
+# Add flash openocd target
+function(family_flash_openocd TARGET)
+  if (NOT DEFINED OPENOCD)
+    set(OPENOCD openocd)
   endif ()
 
-  set(ADDR_OPT "")
-  if (ARGC GREATER 1)
-    set(BIN_FILE $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.${ARGV1})
-    if (${ARGV1} STREQUAL bin)
-      set(ADDR_OPT "-a ${ARGV2}")
-    endif ()
-  else ()
-    set(BIN_FILE $<TARGET_FILE:${TARGET}>)
+  if (NOT DEFINED OPENOCD_OPTION2)
+    set(OPENOCD_OPTION2 "")
   endif ()
 
-  add_custom_target(${TARGET}-pyocd
+  separate_arguments(OPTION_LIST UNIX_COMMAND ${OPENOCD_OPTION})
+  separate_arguments(OPTION_LIST2 UNIX_COMMAND ${OPENOCD_OPTION2})
+
+  # note skip verify since it has issue with rp2040
+  add_custom_target(${TARGET}-openocd
     DEPENDS ${TARGET}
-    COMMAND ${PYOCD} flash -t ${PYOCD_TARGET} ${ADDR_OPT} ${BIN_FILE}
+    COMMAND ${OPENOCD} ${OPTION_LIST} -c "program $<TARGET_FILE:${TARGET}> reset" ${OPTION_LIST2} -c exit
+    VERBATIM
     )
 endfunction()
 
-
-# Add flash using NXP's LinkServer (redserver)
-# https://www.nxp.com/design/software/development-software/mcuxpresso-software-and-tools-/linkserver-for-microcontrollers:LINKERSERVER
-function(family_flash_nxplink TARGET)
-  if (NOT DEFINED LINKSERVER)
-    set(LINKSERVER LinkServer)
+# Add flash openocd-wch target
+# compiled from https://github.com/hathach/riscv-openocd-wch or https://github.com/dragonlock2/miscboards/blob/main/wch/SDK/riscv-openocd.tar.xz
+function(family_flash_openocd_wch TARGET)
+  if (NOT DEFINED OPENOCD)
+    set(OPENOCD $ENV{HOME}/app/riscv-openocd-wch/src/openocd)
   endif ()
 
-  # LinkServer has a bug that can only execute with full path otherwise it throws:
-  # realpath error: No such file or directory
-  execute_process(COMMAND which ${LINKSERVER} OUTPUT_VARIABLE LINKSERVER_PATH OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-  add_custom_target(${TARGET}-nxplink
-    DEPENDS ${TARGET}
-    COMMAND ${LINKSERVER_PATH} flash ${NXPLINK_DEVICE} load $<TARGET_FILE:${TARGET}>
-    )
+  family_flash_openocd(${TARGET})
 endfunction()
 
 

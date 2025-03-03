@@ -1,8 +1,8 @@
 UF2_FAMILY_ID = 0x57755a57
 CROSS_COMPILE = arm-none-eabi-
 
-ST_HAL_DRIVER = lib/st/stm32f4xx_hal_driver
-ST_CMSIS = lib/st/cmsis_device_f4
+ST_HAL_DRIVER = lib/mcu/st/stm32f4xx_hal_driver
+ST_CMSIS = lib/mcu/st/cmsis_device_f4
 CMSIS_5 = lib/CMSIS_5
 
 # Port Compiler Flags
@@ -41,6 +41,7 @@ SRC_C += \
 
 ifndef BUILD_NO_TINYUSB
 SRC_C += lib/tinyusb/src/portable/synopsys/dwc2/dcd_dwc2.c
+SRC_C += lib/tinyusb/src/portable/synopsys/dwc2/dwc2_common.c
 endif
 
 # Port include

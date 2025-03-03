@@ -3,8 +3,8 @@ include $(TOP)/$(PORT_DIR)/boards/$(BOARD)/board.mk
 UF2_FAMILY_ID = 0x6db66082
 CROSS_COMPILE = arm-none-eabi-
 
-ST_HAL_DRIVER = lib/st/stm32h7xx_hal_driver
-ST_CMSIS = lib/st/cmsis_device_h7
+ST_HAL_DRIVER = lib/mcu/st/stm32h7xx_hal_driver
+ST_CMSIS = lib/mcu/st/cmsis_device_h7
 CMSIS_5 = lib/CMSIS_5
 
 # Compiler flags
@@ -67,7 +67,8 @@ SRC_C += \
 
 
 ifndef BUILD_NO_TINYUSB
-SRC_C += lib/tinyusb/src/portable/st/synopsys/dcd_synopsys.c
+SRC_C += lib/tinyusb/src/portable/synopsys/dwc2/dcd_dwc2.c
+SRC_C += lib/tinyusb/src/portable/synopsys/dwc2/dwc2_common.c
 endif
 
 # Includes
