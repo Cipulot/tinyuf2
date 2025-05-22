@@ -1,4 +1,4 @@
-name: Build CIPULOT
+name: Build CIPULOT Boards
 
 on:
   pull_request:
@@ -9,18 +9,13 @@ on:
       - created
 
 jobs:
-  # ---------------------------------------
-  # Build ARM family
-  # ---------------------------------------
-  ARM:
+  build-cipulot:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         board:
-          # Alphabetical order
-          # stm32f4
-          - "seneca"
+          # List your CIPULOT boards here, alphabetical order recommended
           - "cipulot_uf2_f401cbx_8mhz"
           - "cipulot_uf2_f401ccx_8mhz"
           - "cipulot_uf2_f401cex_8mhz"
