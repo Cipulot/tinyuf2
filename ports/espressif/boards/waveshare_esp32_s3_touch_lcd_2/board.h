@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef ESPRESSIF_S3_DEVKITC_H_
-#define ESPRESSIF_S3_DEVKITC_H_
+#ifndef WAVESHARE_ESP32_S3_TOUCH_LCD_2_H_
+#define WAVESHARE_ESP32_S3_TOUCH_LCD_2_H_
 
 //--------------------------------------------------------------------+
 // Button
@@ -36,39 +36,59 @@
 
 // GPIO that implement 1-bit memory with RC components which hold the
 // pin value long enough for double reset detection.
-// #define PIN_DOUBLE_RESET_RC
+
+// #define PIN_DOUBLE_RESET_RC   36
+// #define CUSTOM_PIN_BUTTON_PWR_EN   35
 
 //--------------------------------------------------------------------+
 // LED
 //--------------------------------------------------------------------+
 
-// GPIO connected to Neopixel data
-#define NEOPIXEL_PIN          38
+// No LED onboard.
 
-// Brightness percentage from 1 to 255
-#define NEOPIXEL_BRIGHTNESS   0x10
+//--------------------------------------------------------------------+
+// TFT
+//--------------------------------------------------------------------+
+#define CONFIG_LCD_TYPE_ST7789V
 
-// Number of neopixels
-#define NEOPIXEL_NUMBER       1
+#define DISPLAY_PIN_MISO      -1
+#define DISPLAY_PIN_MOSI       38
+#define DISPLAY_PIN_SCK        39
 
+#define DISPLAY_PIN_CS         45
+#define DISPLAY_PIN_DC         42
+#define DISPLAY_PIN_RST        0
 
-// LED for indicator
-// If not defined neopixel will be use for flash writing instead
-// #define LED_PIN               42
-// #define LED_STATE_ON          1
+#define DISPLAY_PIN_BL         1
+#define DISPLAY_BL_ON          1
+
+#define DISPLAY_PIN_POWER     -1
+#define DISPLAY_POWER_ON       1
+
+#define DISPLAY_WIDTH         320
+#define DISPLAY_HEIGHT        240
+
+#define DISPLAY_COL_OFFSET    0
+#define DISPLAY_ROW_OFFSET    0
+
+// Memory Data Access Control & Vertical Scroll Start Address
+#define DISPLAY_MADCTL        (TFT_MADCTL_MX)
+#define DISPLAY_VSCSAD        0
+
+#define DISPLAY_TITLE         "TOUCH-LCD-2"
 
 //--------------------------------------------------------------------+
 // USB UF2
 //--------------------------------------------------------------------+
 
-#define USB_VID           0x239A
-#define USB_PID           0x00A5    // TODO temporarily shared with S2 saola wrover
-#define USB_MANUFACTURER  "Espressif"
-#define USB_PRODUCT       "ESP32S3 DevKitC 1"
+#define USB_VID                  0x303a
+#define USB_PID                  0x82CF
+#define USB_MANUFACTURER         "Waveshare Electronics"
+#define USB_PRODUCT              "ESP32-S3-Touch-LCD-2"
 
-#define UF2_PRODUCT_NAME  USB_MANUFACTURER " " USB_PRODUCT
-#define UF2_BOARD_ID      "ESP32S3-DevKitC-v1.0"
-#define UF2_VOLUME_LABEL  "S3DKC1BOOT"
-#define UF2_INDEX_URL     "https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html"
+#define UF2_PRODUCT_NAME         USB_MANUFACTURER " " USB_PRODUCT
+#define UF2_BOARD_ID             "ESP32-S3-Touch-LCD-2"
+#define UF2_VOLUME_LABEL         "LCD2BOOT"
+#define UF2_INDEX_URL            "https://www.waveshare.com/esp32-s3-touch-lcd-2.htm?sku=29667"
 
 #endif

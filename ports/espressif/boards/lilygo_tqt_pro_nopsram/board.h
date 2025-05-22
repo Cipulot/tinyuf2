@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef ESPRESSIF_S3_DEVKITC_H_
-#define ESPRESSIF_S3_DEVKITC_H_
+#ifndef LILYGO_TQT_PRO_NOPSRAM_H_
+#define LILYGO_TQT_PRO_NOPSRAM_H_
 
 //--------------------------------------------------------------------+
 // Button
@@ -36,39 +36,51 @@
 
 // GPIO that implement 1-bit memory with RC components which hold the
 // pin value long enough for double reset detection.
-// #define PIN_DOUBLE_RESET_RC
+// #define PIN_DOUBLE_RESET_RC   10
 
 //--------------------------------------------------------------------+
-// LED
+// TFT
 //--------------------------------------------------------------------+
 
-// GPIO connected to Neopixel data
-#define NEOPIXEL_PIN          38
+#define CONFIG_LCD_TYPE_GC9107
 
-// Brightness percentage from 1 to 255
-#define NEOPIXEL_BRIGHTNESS   0x10
+#define DISPLAY_PIN_MISO      -1 // required if use CONFIG_LCD_TYPE_AUTO
+#define DISPLAY_PIN_MOSI       2
+#define DISPLAY_PIN_SCK        3
 
-// Number of neopixels
-#define NEOPIXEL_NUMBER       1
+#define DISPLAY_PIN_CS         5
+#define DISPLAY_PIN_DC         6
+#define DISPLAY_PIN_RST        1
 
+#define DISPLAY_PIN_BL        10
+#define DISPLAY_BL_ON          0  // GPIO state to enable back light
 
-// LED for indicator
-// If not defined neopixel will be use for flash writing instead
-// #define LED_PIN               42
-// #define LED_STATE_ON          1
+#define DISPLAY_WIDTH         128
+#define DISPLAY_HEIGHT        128
+
+#define DISPLAY_COL_OFFSET     1
+#define DISPLAY_ROW_OFFSET     2
+
+// Memory Data Access Control
+#define DISPLAY_MADCTL        (TFT_MADCTL_MX | TFT_MADCTL_MY | TFT_MADCTL_MV)
+// Vertical Scroll Start Address
+#define DISPLAY_VSCSAD        0
+
+#define DISPLAY_TITLE         "T-QT"
 
 //--------------------------------------------------------------------+
 // USB UF2
 //--------------------------------------------------------------------+
 
-#define USB_VID           0x239A
-#define USB_PID           0x00A5    // TODO temporarily shared with S2 saola wrover
-#define USB_MANUFACTURER  "Espressif"
-#define USB_PRODUCT       "ESP32S3 DevKitC 1"
+#define USB_VID                  0x303a
+#define USB_PID                  0x8155
 
-#define UF2_PRODUCT_NAME  USB_MANUFACTURER " " USB_PRODUCT
-#define UF2_BOARD_ID      "ESP32S3-DevKitC-v1.0"
-#define UF2_VOLUME_LABEL  "S3DKC1BOOT"
-#define UF2_INDEX_URL     "https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html"
+#define USB_MANUFACTURER         "LILYGO"
+#define USB_PRODUCT              "T-QT PRO (8M Flash, NO PSRAM)"
+
+#define UF2_PRODUCT_NAME         USB_MANUFACTURER " " USB_PRODUCT
+#define UF2_BOARD_ID             "ESP32S3-TQTPRO-N8"
+#define UF2_VOLUME_LABEL         "TQTPROBOOT"
+#define UF2_INDEX_URL            "https://lilygo.cc/products/t-qt-pro"
 
 #endif
