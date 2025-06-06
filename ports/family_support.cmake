@@ -33,6 +33,10 @@ if (NOT DEFINED TOOLCHAIN)
   set(TOOLCHAIN gcc)
 endif ()
 
+if (NOT DEFINED CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
+  set(CMAKE_BUILD_TYPE MinSizeRel CACHE STRING "Build type" FORCE)
+endif ()
+
 #-------------------------------------------------------------
 # FAMILY and BOARD
 #-------------------------------------------------------------
@@ -56,6 +60,13 @@ if (NOT DEFINED FAMILY)
   list(GET BOARD_PATH 0 FAMILY)
 endif ()
 
+set(FAMILY_PATH ${TOP}/ports/${FAMILY} CACHE INTERNAL "FAMILY_PATH")
+set(BOARD_PATH ${TOP}/ports/${FAMILY}/boards/${BOARD} CACHE INTERNAL "BOARD_PATH")
+
+set(ARTIFACT_PATH ${FAMILY_PATH}/_bin/${BOARD})
+execute_process(COMMAND mkdir -p ${ARTIFACT_PATH})
+execute_process(COMMAND mkdir -p ${ARTIFACT_PATH}/apps)
+
 # enable LTO if supported
 include(CheckIPOSupported)
 check_ipo_supported(RESULT IPO_SUPPORTED)
@@ -67,8 +78,12 @@ endif ()
 # Functions
 #------------------------------------
 
-function(family_add_bin_hex TARGET)
-  # placeholder, will be override by family specific
+# Generate bin/hex output, can be override by family specific
+function(family_gen_bin_hex TARGET)
+  add_custom_command(TARGET ${TARGET} POST_BUILD
+    COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:${TARGET}> $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.bin
+    COMMAND ${CMAKE_OBJCOPY} -Oihex $<TARGET_FILE:${TARGET}> $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.hex
+    VERBATIM)
 endfunction()
 
 function(family_add_default_warnings TARGET)
@@ -104,24 +119,8 @@ function(family_add_default_warnings TARGET)
     if (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
       target_link_options(${TARGET} PUBLIC "LINKER:--no-warn-rwx-segments")
     endif ()
-
-    # GCC 10
-    if (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0)
-      target_compile_options(${TARGET} PUBLIC -Wconversion)
-    endif ()
-
-    # GCC 8
-    if (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
-      target_compile_options(${TARGET} PUBLIC -Wcast-function-type -Wstrict-overflow)
-    endif ()
-
-    # GCC 6
-    if (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0)
-      target_compile_options(${TARGET} PUBLIC -Wno-strict-aliasing)
-    endif ()
   endif ()
 endfunction()
-
 
 function(family_configure_common TARGET)
   # Add BOARD_${BOARD} define
@@ -167,10 +166,8 @@ function(family_configure_common TARGET)
     )
 
   # add hex, bin and uf2 targets
-  family_add_bin_hex(${TARGET})
-
+  family_gen_bin_hex(${TARGET})
 endfunction()
-
 
 # Add tinyusb to example
 function(family_add_tinyusb TARGET OPT_MCU)
@@ -192,7 +189,7 @@ function(family_configure_tinyuf2 TARGET OPT_MCU)
   family_configure_common(${TARGET})
 
   include(${TOP}/src/tinyuf2.cmake)
-  add_tinyuf2(${TARGET})
+  add_tinyuf2_src(${TARGET})
 
   family_add_tinyusb(${TARGET} ${OPT_MCU})
 
@@ -204,35 +201,27 @@ function(family_configure_tinyuf2 TARGET OPT_MCU)
     UF2_VERSION_BASE="${GIT_VERSION}"
     UF2_VERSION="${GIT_VERSION}"
     )
+
+  # copy bin,hex to ARTIFACT_PATH
+  add_custom_command(TARGET ${TARGET} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.bin ${ARTIFACT_PATH}/${TARGET}.bin
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.hex ${ARTIFACT_PATH}/${TARGET}.hex
+    VERBATIM)
+
 endfunction()
 
-
-# Add bin/hex output
-function(family_add_bin_hex TARGET)
+# generate .uf2 file from hex
+function(family_gen_uf2 TARGET FAMILY_ID)
   add_custom_command(TARGET ${TARGET} POST_BUILD
-    COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:${TARGET}> $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.bin
-    COMMAND ${CMAKE_OBJCOPY} -Oihex $<TARGET_FILE:${TARGET}> $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.hex
+    COMMAND ${Python_EXECUTABLE} ${UF2CONV_PY} -f ${FAMILY_ID} -c -o $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.uf2 $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.hex
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.uf2 ${ARTIFACT_PATH}/apps/${TARGET}.uf2
     VERBATIM)
 endfunction()
 
-
-# Add uf2 target, optional parameter is the extension of the binary file (default is hex)
-# If bin file is used, address is also required
-function(family_add_uf2 TARGET FAMILY_ID)
-  set(BIN_EXT hex)
-  set(ADDR_OPT "")
-  if (ARGC GREATER 2)
-    set(BIN_EXT ${ARGV2})
-    if (BIN_EXT STREQUAL bin)
-      set(ADDR_OPT "-b ${ARGV3}")
-    endif ()
-  endif ()
-
-  set(BIN_FILE $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.${BIN_EXT})
-
+# generate .uf2 file from bin with address
+function(family_gen_uf2_from_bin TARGET FAMILY_ID BIN_ADDR)
   add_custom_command(TARGET ${TARGET} POST_BUILD
-    COMMAND echo ${Python_EXECUTABLE} ${UF2CONV_PY} -f ${FAMILY_ID} ${ADDR_OPT} -c -o $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.uf2 ${BIN_FILE}
-    COMMAND ${Python_EXECUTABLE} ${UF2CONV_PY} -f ${FAMILY_ID} ${ADDR_OPT} -c -o $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.uf2 ${BIN_FILE}
+    COMMAND ${Python_EXECUTABLE} ${UF2CONV_PY} -f ${FAMILY_ID} -b ${BIN_ADDR} -c -o $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.uf2 $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.bin
     VERBATIM)
 endfunction()
 
@@ -243,12 +232,21 @@ endfunction()
 # Add flash jlink target, optional parameter is the extension of the binary file
 function(family_flash_jlink TARGET)
   if (NOT DEFINED JLINKEXE)
-    set(JLINKEXE JLinkExe)
+    if(CMAKE_HOST_WIN32)
+      set(JLINKEXE JLink.exe)
+    else()
+      set(JLINKEXE JLinkExe)
+    endif()
   endif ()
 
   if (NOT DEFINED JLINK_IF)
     set(JLINK_IF swd)
   endif ()
+
+  if (NOT DEFINED JLINK_OPTION)
+    set(JLINK_OPTION "")
+  endif ()
+  separate_arguments(JLINK_OPTION UNIX_COMMAND ${JLINK_OPTION})
 
   if (ARGC GREATER 1)
     set(BIN_FILE $<TARGET_FILE_DIR:${TARGET}>/${TARGET}.${ARGV1})
@@ -268,7 +266,7 @@ exit"
 
   add_custom_target(${TARGET}-jlink
     DEPENDS ${TARGET}
-    COMMAND ${JLINKEXE} -device ${JLINK_DEVICE} -if ${JLINK_IF} -JTAGConf -1,-1 -speed auto -CommandFile ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.jlink
+    COMMAND ${JLINKEXE} -device ${JLINK_DEVICE} ${JLINK_OPTION} -if ${JLINK_IF} -JTAGConf -1,-1 -speed auto -CommandFile ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.jlink
     )
 
   # erase with jlink
@@ -307,13 +305,17 @@ function(family_flash_openocd TARGET)
     set(OPENOCD_OPTION2 "")
   endif ()
 
+  if (DEFINED OPENOCD_SERIAL)
+    set(OPENOCD_OPTION "-c \"adapter serial ${OPENOCD_SERIAL}\" ${OPENOCD_OPTION}")
+  endif ()
+
   separate_arguments(OPTION_LIST UNIX_COMMAND ${OPENOCD_OPTION})
   separate_arguments(OPTION_LIST2 UNIX_COMMAND ${OPENOCD_OPTION2})
 
   # note skip verify since it has issue with rp2040
   add_custom_target(${TARGET}-openocd
     DEPENDS ${TARGET}
-    COMMAND ${OPENOCD} ${OPTION_LIST} -c "program $<TARGET_FILE:${TARGET}> reset" ${OPTION_LIST2} -c exit
+    COMMAND ${OPENOCD} -c "tcl_port disabled; gdb_port disabled" ${OPTION_LIST} -c "init; halt; program $<TARGET_FILE:${TARGET}>" -c reset ${OPTION_LIST2} -c exit
     VERBATIM
     )
 endfunction()
@@ -323,6 +325,33 @@ endfunction()
 function(family_flash_openocd_wch TARGET)
   if (NOT DEFINED OPENOCD)
     set(OPENOCD $ENV{HOME}/app/riscv-openocd-wch/src/openocd)
+  endif ()
+
+  family_flash_openocd(${TARGET})
+endfunction()
+
+
+# Add flash openocd adi (Analog Devices) target
+# included with msdk or compiled from release branch of https://github.com/analogdevicesinc/openocd
+function(family_flash_openocd_adi TARGET)
+  if (DEFINED MAXIM_PATH)
+    # use openocd from msdk with MAXIM_PATH cmake variable first if the user
+    # specified it
+    set(OPENOCD ${MAXIM_PATH}/Tools/OpenOCD/openocd)
+    set(OPENOCD_OPTION2 "-s ${MAXIM_PATH}/Tools/OpenOCD/scripts")
+  elseif (DEFINED ENV{MAXIM_PATH})
+    # use openocd from msdk with MAXIM_PATH environment variable. Normalize
+    # since msdk can be Windows (MinGW) or Linux
+    file(TO_CMAKE_PATH "$ENV{MAXIM_PATH}" MAXIM_PATH_NORM)
+    set(OPENOCD ${MAXIM_PATH_NORM}/Tools/OpenOCD/openocd)
+    set(OPENOCD_OPTION2 "-s ${MAXIM_PATH_NORM}/Tools/OpenOCD/scripts")
+  else()
+    # compiled from source
+    if (NOT DEFINED OPENOCD_ADI_PATH)
+      set(OPENOCD_ADI_PATH $ENV{HOME}/app/openocd_adi)
+    endif ()
+    set(OPENOCD ${OPENOCD_ADI_PATH}/src/openocd)
+    set(OPENOCD_OPTION2 "-s ${OPENOCD_ADI_PATH}/tcl")
   endif ()
 
   family_flash_openocd(${TARGET})
